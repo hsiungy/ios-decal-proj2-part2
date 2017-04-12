@@ -38,6 +38,9 @@ class ChooseThreadViewController: UIViewController, UITableViewDelegate, UITable
     @IBAction func postToFeed(_ sender: UIButton) {
         if let threadName = chosenThreadLabel.text, threadName != "" {
             if let imageToPost = chosenImage {
+                print(imageToPost)
+                print(threadName)
+                print(FIRAuth.auth()?.currentUser?.displayName!)
                 addPost(postImage: imageToPost, thread: threadName, username: (FIRAuth.auth()?.currentUser?.displayName)!)
                 performSegue(withIdentifier: "unwindToImagePicker", sender: nil)
             }

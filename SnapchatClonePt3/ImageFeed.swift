@@ -63,14 +63,16 @@ func addPost(postImage: UIImage, thread: String, username: String) {
     //dateFormat = "yyyy-MM-dd HH:mm:ss.A"
     // YOUR CODE HERE
     let formatter = DateFormatter()
+    formatter.dateFormat = dateFormat
     let date = formatter.string(from: Date())
-    let key = dbRef.child(firPostsNode).childByAutoId().key
-    let post = [firImagePathNode: path,
-                firThreadNode: thread,
-                firUsernameNode: username,
-                firDateNode: date]
-    let updates = ["/\(firPostsNode)/\(key)": post]
-    dbRef.updateChildValues(updates)
+//    dbRef.child(firPostsNode).childByAutoId().key
+    let post: [String: AnyObject] = ["date": date as AnyObject,
+                                     "imagePath": path as AnyObject,
+                                     "thread": thread as AnyObject,
+                                     "username": username as AnyObject]
+//    let updates = ["/\(firPostsNode)/\(key)": post]
+//    dbRef.updateChildValues(updates)
+    dbRef.child(firPostsNode).childByAutoId().setValue(post)
     store(data: data, toPath: path)
 }
 
@@ -86,12 +88,11 @@ func store(data: Data, toPath path: String) {
     let storageRef = FIRStorage.storage().reference()
     // YOUR CODE HERE
     let dataChild = storageRef.child(path)
-    dataChild.put(data, metadata: nil) { (metadata, error) in
+    dataChild.put(data, metadata: nil, completion: { (metadata, error) in
         if let error = error {
-            // Uh-oh, an error occurred!
-            return
+            print(error)
         }
-}
+    })
 }
 
 
@@ -117,8 +118,33 @@ func getPosts(user: CurrentUser, completion: @escaping ([Post]?) -> Void) {
     var postArray: [Post] = []
     // YOUR CODE HERE
     dbRef.child(firPostsNode).observeSingleEvent(of: .value, with: {(snapshot) in
-        if let value = snapshot.value as? [String:AnyObject] {
-            // Do Something
+        if snapshot.exists() {
+            let value = snapshot.value as? [String: AnyObject]
+            user.getReadPostIDs(completion: {(readPosts) in
+                for (k, v) in value! {
+                    var userK = ""
+                    var dateK = ""
+                    var threadK = ""
+                    var pathK = ""
+                    if let username = v.value(forKey: firUsernameNode) as? String {
+                        userK = username
+                    }
+                    if let date = v.value(forKey: firDateNode) as? String {
+                        dateK = date
+                    }
+                    if let thread = v.value(forKey: firThreadNode) as? String {
+                        threadK = thread
+                    }
+                    if let path = v.value(forKey: firImagePathNode) as? String {
+                        pathK = path
+                    }
+                    let post = Post(id: k, username: userK, postImagePath: pathK, thread: threadK, dateString: dateK, read: readPosts.contains(k))
+                    postArray.append(post)
+                }
+                completion(postArray)
+            })
+        } else {
+            completion(nil)
         }
     })
     
