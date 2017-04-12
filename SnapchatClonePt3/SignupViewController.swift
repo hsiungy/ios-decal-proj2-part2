@@ -40,6 +40,26 @@ class SignupViewController: UIViewController, UITextFieldDelegate {
         guard let name = nameField.text else { return }
         
         // YOUR CODE HERE
+        if password.characters.count < 6 {
+            let alert = UIAlertController(title: "Sign-up Failed", message: "Password must consist of at least 6 characters.", preferredStyle: .actionSheet)
+            alert.addAction(UIAlertAction(title: "Try Again", style: .default) { action in
+                // perhaps use action.title here
+            })
+            self.present(alert, animated: true)
+            return
+        }
+        FIRAuth.auth()?.createUser(withEmail: email, password: password) { (user, error) in
+            // [START_EXCLUDE]
+            if let error = error {
+                // Implement Alert
+                return
+            }
+            print("\(user!.email!) created")
+            let changeRequest = FIRAuth.auth()?.currentUser?.profileChangeRequest()
+            changeRequest?.displayName = name
+            self.performSegue(withIdentifier: "signupToMain", sender: self)
+            // [END_EXCLUDE]
+        }
     }
 
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
